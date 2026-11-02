@@ -13,6 +13,8 @@ not part of this implementation.
 
 ## Engineering references
 
+- [Hyprland issue #1660](https://github.com/hyprwm/Hyprland/issues/1660): upstream
+  discussion on global fullscreen / multi-monitor fullscreen spanning in Hyprland.
 - [Hyprspan](https://github.com/gondhijagapathi/hyprspan): background on
   application-requested X11 multi-monitor fullscreen and the initial prototype.
 - [Hyprland 0.57 plugin API](https://github.com/hyprwm/Hyprland/blob/v0.57.0/src/plugins/PluginAPI.hpp):
