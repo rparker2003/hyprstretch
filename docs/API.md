@@ -87,7 +87,10 @@ values into a shell command.
 
 The optional `tools/picker.py` (`hyprstretch-picker`) selector is a separate client
 of this API. Bind it with `SUPER + SHIFT + G`; it captures the active window, draws
-the compatible horizontal monitor layout with that window's monitor selected, then
-sends the chosen outputs to `hyprstretch stretch`. Reopening the
-picker closes it. `tools/toggle.py` (`hyprstretch-toggle`) closes the picker while
-open and otherwise toggles the span.
+the compatible horizontal monitor layout sorted left-to-right (`[1]`–`[9]`) with that
+window's monitor selected, and lets the user toggle monitors with `1`–`9` (or click)
+or select all with `A`. Pressing `Enter` (or `Escape` / reopening the picker after
+making an adjustment) sends the chosen outputs to `hyprstretch stretch`; pressing
+`Escape` or reopening the picker without making adjustments dismisses it without
+changes. `tools/toggle.py` (`hyprstretch-toggle`) closes the picker while open and
+otherwise toggles the span.

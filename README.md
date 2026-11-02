@@ -4,10 +4,12 @@
 
 Hyprland doesn't include built-in global fullscreen across multiple monitors yet, and while I looked into [Hyprspan](https://github.com/gondhijagapathi/hyprspan), it didn't do everything I wanted—so I built **Hyprstretch**! It works with every Wayland and XWayland application I've tested so far, including sim-racing games like *Assetto Corsa* across triple monitors, ultrawide workflows, and terminals or apps that don't support multi-monitor spanning on their own.
 
+![Hyprstretch multi-monitor demo](images/demo.gif)
+
 ### Modes: Global Fullscreen vs. Partial Fullscreen
 
 - **Global Fullscreen (Default Span):** Stretches the focused window across your entire horizontal monitor row (or your configured default monitors) in one keypress, and restores its exact original tiled/floating geometry when toggled off.
-- **Partial Fullscreen (GUI Monitor Picker):** Want a window stretched across just 2 of your 3 monitors, or want to exclude an extra TV/side display? Open the visual monitor picker (`tools/picker.py`), click the physical monitor tiles you want to span, and click **Apply**:
+- **Partial Fullscreen (GUI Monitor Picker):** Want a window stretched across just 2 of your 3 monitors, or want to exclude an extra TV/side display? Open the visual monitor picker (`tools/picker.py`), press `1`–`9` (or click) to toggle the monitors you want (`A` selects all), and press `Enter` or `Esc` to apply:
 
 ![Hyprstretch monitor selector](images/monitor-picker.png)
 
@@ -84,10 +86,10 @@ hl.bind("SUPER + SHIFT + G",
 ## How to Use
 
 - **Toggle Global Fullscreen (`Super+G`):** Stretches the focused window across your horizontal monitor row. Press `Super+G` again to restore the window to its original single-monitor tiled or floating state.
-- **Pick Specific Monitors (`Super+Shift+G`):** Opens the visual monitor layout with the active window's current monitor pre-selected.
-  - Click additional monitors to span across a custom subset (or leave 1 selected for single-monitor fullscreen) and click **Apply**.
+- **Pick Specific Monitors (`Super+Shift+G`):** Opens the visual monitor layout sorted left-to-right (`[1]`–`[9]`) with the active window's current monitor pre-selected.
+  - Press `1`–`9` (or click tiles) to toggle monitors (`A` selects all monitors in the row), then press `Enter` or `Escape` (or click **Apply**) to stretch across the selected displays.
+  - If you did not make any adjustments, pressing `Escape` (or `Super+Shift+G` / `Super+G`) simply dismisses the picker without changes.
   - Press `Super+G` (or your fullscreen keybind) afterward to return the window to normal.
-  - Press `Escape`, `Super+Shift+G`, or `Super+G` while the picker is open to dismiss it without changes.
 
 See [`docs/API.md`](docs/API.md) for direct `hyprctl hyprstretch` CLI commands and native `hl.plugin.hyprstretch.*` Lua functions.
 
