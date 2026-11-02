@@ -135,6 +135,11 @@ hl.config({animations={enabled=false}, xwayland={force_zero_scaling=false},
             wait_for(f"{backend} TV is excluded", lambda: fixture(title)["size"] == [3840, 720] and "outputs=LEFT CENTER RIGHT" in ctl("hyprstretch"))
             dispatch("hl.dsp.cursor.move({x=-1000,y=300})")
             wait_for(f"{backend} pointer reaches the stretched application", lambda: json.loads(ctl("-j", "activewindow")).get("address") == address)
+            dispatch("hl.dsp.focus({workspace=5})")
+            wait_for(f"{backend} switching workspace on leased monitor releases that monitor",
+                     lambda: not blue_surface_visible(-1000) and blue_surface_visible(300) and blue_surface_visible(1500))
+            dispatch("hl.dsp.focus({workspace=1})")
+            wait_for(f"{backend} refocusing stretched window reclaims released monitor", surface_on_three_monitors)
             dispatch("hl.dsp.focus({workspace=2})")
             wait_for(f"{backend} changing workspace keeps the full render size", lambda: fixture(title)["size"] == [3840, 720])
             assert ctl("hyprstretch", "restore", f"window={address}") == "ok"
@@ -142,6 +147,11 @@ hl.config({animations={enabled=false}, xwayland={force_zero_scaling=false},
             wait_for(f"{backend} stretched surface clears from secondary monitors",
                      lambda: all(not blue_surface_visible(x) for x in (-1000, 1500)))
             dispatch("hl.dsp.focus({workspace=1})")
+            assert ctl("hyprstretch", "stretch", f"window={address}", "CENTER") == "ok"
+            wait_for(f"{backend} single-monitor selection fullscreens on that monitor",
+                     lambda: fixture(title)["at"] == [0, 0] and fixture(title)["size"] == [1280, 720] and fixture(title)["fullscreen"] != initial["fullscreen"])
+            assert ctl("hyprstretch", "restore", f"window={address}") == "ok"
+            wait_for(f"{backend} restores from single-monitor fullscreen", lambda: fixture(title)["size"] == initial["size"])
             response = ctl("eval", f'local ok, err = hl.plugin.hyprstretch.stretch({{window="{address}", outputs={{"LEFT","CENTER"}}}}); assert(ok, err)')
             assert response == "ok", response
             wait_for(f"{backend} accepts a two-monitor selection", lambda: fixture(title)["size"] == [2560, 720])
@@ -154,6 +164,18 @@ hl.config({animations={enabled=false}, xwayland={force_zero_scaling=false},
             response = ctl("eval", f'local ok, err = hl.plugin.hyprstretch.restore({{window="{address}"}}); assert(ok, err)')
             assert response == "ok", response
             wait_for(f"{backend} Lua controls survive a configuration reload", lambda: fixture(title)["size"] == initial["size"])
+            dispatch('hl.dsp.window.float({action="set"})')
+            wait_for(f"{backend} switches to floating state", lambda: fixture(title)["floating"])
+            floating_size = fixture(title)["size"]
+            floating_at = fixture(title)["at"]
+            assert ctl("hyprstretch", "stretch", f"window={address}", "LEFT", "CENTER") == "ok"
+            wait_for(f"{backend} floating window stretches across selected monitors",
+                     lambda: fixture(title)["at"] == [-1280, 0] and fixture(title)["size"] == [2560, 720])
+            assert ctl("hyprstretch", "restore", f"window={address}") == "ok"
+            wait_for(f"{backend} floating window restores its saved floating frame",
+                     lambda: fixture(title)["floating"] and fixture(title)["size"] == floating_size and fixture(title)["at"] == floating_at)
+            dispatch('hl.dsp.window.float({action="unset"})')
+            wait_for(f"{backend} returns to tiled state", lambda: not fixture(title)["floating"] and fixture(title)["size"] == initial["size"])
             response = ctl("eval", f'local ok, err = hl.plugin.hyprstretch.stretch({{window="{address}", outputs={{"LEFT","CENTER","RIGHT"}}}}); assert(ok, err)')
             assert response == "ok", response
             ctl("output", "remove", "RIGHT")
@@ -166,6 +188,11 @@ hl.config({animations={enabled=false}, xwayland={force_zero_scaling=false},
             wait_for(f"{backend} toggle restores", lambda: fixture(title)["size"] == initial["size"])
             assert ctl("hyprstretch", "stretch", f"window={address}") == "ok"
             wait_for(f"{backend} default selection excludes TV", lambda: fixture(title)["size"] == [3840, 720])
+            assert ctl("eval", 'hl.config({plugin={hyprstretch={outputs="CENTER RIGHT"}}})') == "ok"
+            assert ctl("hyprstretch", "stretch", f"window={address}") == "ok"
+            wait_for(f"{backend} plugin:hyprstretch:outputs configures default span",
+                     lambda: fixture(title)["at"] == [0, 0] and fixture(title)["size"] == [2560, 720])
+            assert ctl("eval", 'hl.config({plugin={hyprstretch={outputs=""}}})') == "ok"
             ctl("plugin", "unload", str(plugin))
             loaded = False
             wait_for(f"{backend} unload restores geometry", lambda: fixture(title)["size"] == initial["size"])

@@ -43,5 +43,25 @@ int main()
   displays[0].name = "right";
   displays[0].width = std::numeric_limits<double>::quiet_NaN();
   require(!Stretch::horizontalRegion(displays), "non-finite geometry rejected");
+  displays[0].width = std::numeric_limits<double>::infinity();
+  require(!Stretch::horizontalRegion(displays), "infinite geometry rejected");
+  displays[0].width = 0;
+  require(!Stretch::horizontalRegion(displays), "zero width rejected");
+  displays[0].width = -1280;
+  require(!Stretch::horizontalRegion(displays), "negative width rejected");
+  displays[0].width = 1280;
+  displays[0].scale = 0;
+  require(!Stretch::horizontalRegion(displays), "zero scale rejected");
+  displays[0].scale = 1.0005;
+  require(bool(Stretch::horizontalRegion(displays)), "sub-epsilon scale difference accepted");
+  displays[0].scale = 1.002;
+  require(!Stretch::horizontalRegion(displays), "above-epsilon scale difference rejected");
+  displays[0].scale = 1;
+  displays[0].x = 1280.005;
+  require(bool(Stretch::horizontalRegion(displays)), "sub-epsilon horizontal gap accepted");
+  displays[0].x = 1280;
+  std::vector<Display> single{{"center", 0, 0, 1920, 1080, 1}};
+  region = Stretch::horizontalRegion(single);
+  require(region && region->x == 0 && region->width == 1920 && region->height == 1080, "single monitor region accepted");
   require(!Stretch::horizontalRegion({}), "empty selection rejected");
 }
