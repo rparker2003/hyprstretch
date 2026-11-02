@@ -2,7 +2,7 @@
 
 Stretch a window across chosen Hyprland monitors without floating it. Super easy!
 
-I looked into Hyprspan, but it didn't do everything I wanted, so I built this! This works for every application I've tested so far, such as Assetto Corsa and terminals that don't request multi-monitor spanning themselves!
+I looked into [Hyprspan](https://github.com/gondhijagapathi/hyprspan), but it didn't do everything I wanted, so I built this! This works for every application I've tested so far, such as Assetto Corsa and terminals that don't request multi-monitor spanning themselves!
 
 Hyprstretch also includes a simple GUI monitor selector in case you only want to span part of your setup:
 
