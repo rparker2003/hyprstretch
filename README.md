@@ -11,8 +11,8 @@ Hyprland doesn't include built-in global fullscreen across multiple monitors yet
 
 ![Hyprstretch monitor selector](images/monitor-picker.png)
 
-Full disclosure: This was created entirely by Codex (ChatGPT AI). It ran the tests it created, then loaded the plugin. I manually tested it, and it works how I expect!
-I do not take responsibility for issues it causes or configurations it may break; I can only say it works fine in my environment, but I don't see why it wouldn't work on others.
+Full disclosure: This was created entirely by AI (Codex + Gemini). It ran an extensive set of tests it created, then loaded the plugin. I manually tested everything, and it works how I expect!
+I do not take responsibility for issues this plugin causes or configurations it may break; I can only say it works fine in my environment -- I don't see why it wouldn't work on others just as well, though.
 
 ## Install
 
@@ -27,7 +27,7 @@ hyprctl plugin load "$PWD/build/hyprstretch.so"
 
 ## Configure Keybindings
 
-Hyprstretch does not hardcode any keybindings so it never collides with your existing config. Below are the recommended bindings (`SUPER + G` for instant global fullscreen toggle, and `SUPER + SHIFT + G` for the interactive monitor picker).
+Hyprstretch does not hardcode any keybindings, so it never collides with your existing config. Below are the recommended bindings (`SUPER + G` for instant global fullscreen toggle, and `SUPER + SHIFT + G` for the interactive monitor picker).
 
 ### Option A: Standard `hyprland.conf`
 
