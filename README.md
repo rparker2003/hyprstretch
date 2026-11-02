@@ -18,12 +18,24 @@ I do not take responsibility for issues this plugin causes or configurations it 
 
 Hyprstretch targets Hyprland 0.57 and needs matching headers, a C++26 compiler, `make`, `pkg-config`, and Hyprland's development dependencies. The optional GUI picker requires Python 3, GTK 4, and PyGObject (`python-gobject`).
 
+### Method 1: Using `hyprpm` (Recommended for Plugin Management)
+
 ```sh
-git clone https://github.com/rparker52003/hyprstretch.git
-cd hyprstretch
-make
-hyprctl plugin load "$PWD/build/hyprstretch.so"
+hyprpm update
+hyprpm add https://github.com/rparker2003/hyprstretch
+hyprpm enable hyprstretch
 ```
+
+### Method 2: From Source (`git clone` + `make install`)
+
+```sh
+git clone https://github.com/rparker2003/hyprstretch.git
+cd hyprstretch
+make install
+make reload
+```
+
+`make install` installs the plugin into `~/.local/lib/hyprstretch/current.so` and installs `hyprstretch-toggle` and `hyprstretch-picker` into `~/.local/bin`.
 
 ## Configure Keybindings
 
@@ -32,64 +44,61 @@ Hyprstretch does not hardcode any keybindings, so it never collides with your ex
 ### Option A: Standard `hyprland.conf`
 
 ```ini
-# Load the plugin on startup
-exec-once = hyprctl plugin load /home/you/src/hyprstretch/build/hyprstretch.so
+# Load the plugin on startup (if not using hyprpm: exec-once = hyprpm reload -n)
+exec-once = hyprctl plugin load ~/.local/lib/hyprstretch/current.so
+
+# Optional: restrict default automatic toggle to specific monitors
+# plugin:hyprstretch:outputs = DP-2 DP-3 DP-1
 
 # Auto-detect all monitors in the active window's horizontal row:
-bind = SUPER, G, exec, python3 /home/you/src/hyprstretch/tools/toggle.py
+bind = SUPER, G, exec, ~/.local/bin/hyprstretch-toggle
 
 # Or specify exact monitor interfaces (order does not matter; sorted left-to-right automatically):
-# bind = SUPER, G, exec, python3 /home/you/src/hyprstretch/tools/toggle.py DP-1 DP-2 DP-3
+# bind = SUPER, G, exec, ~/.local/bin/hyprstretch-toggle DP-1 DP-2 DP-3
 # bind = SUPER, G, exec, hyprctl hyprstretch toggle HDMI-A-1 DP-1
 
 # Open the visual monitor picker for partial/custom spans:
-bind = SUPER SHIFT, G, exec, python3 /home/you/src/hyprstretch/tools/picker.py
+bind = SUPER SHIFT, G, exec, ~/.local/bin/hyprstretch-picker
 ```
 
 ### Option B: Hyprland Lua Config (`hyprland.lua`)
 
 ```lua
-local hyprstretch = "/home/you/src/hyprstretch"
-
 -- Auto-detect all monitors in the active window's horizontal row:
 hl.bind("SUPER + G",
-    hl.dsp.exec_cmd("python3 " .. hyprstretch .. "/tools/toggle.py"),
+    hl.dsp.exec_cmd("~/.local/bin/hyprstretch-toggle"),
     { description = "Toggle global fullscreen span or close monitor picker" })
 
 -- Or specify exact monitor interfaces (e.g. triple DP setup or dual HDMI+DP):
 -- hl.bind("SUPER + G",
---     hl.dsp.exec_cmd("python3 " .. hyprstretch .. "/tools/toggle.py DP-1 DP-2 DP-3"),
+--     hl.dsp.exec_cmd("~/.local/bin/hyprstretch-toggle DP-1 DP-2 DP-3"),
 --     { description = "Toggle span across DP-1, DP-2, and DP-3" })
 
 hl.bind("SUPER + SHIFT + G",
-    hl.dsp.exec_cmd("python3 " .. hyprstretch .. "/tools/picker.py"),
+    hl.dsp.exec_cmd("~/.local/bin/hyprstretch-picker"),
     { description = "Open monitor picker for partial/custom span" })
 ```
 
-> **Note on Defaults:** If you do not pass monitor names to `toggle.py` (or `hyprctl hyprstretch toggle`), Hyprstretch automatically detects and spans all enabled monitors sharing the active window's horizontal row, height, and scale. If you want to restrict `Super+G` to specific monitors, pass them as arguments (`toggle.py DP-2 DP-3 DP-1`).
+> **Note on Defaults:** If you do not pass monitor names to `hyprstretch-toggle` (`tools/toggle.py`) or `hyprctl hyprstretch toggle`, Hyprstretch checks `plugin:hyprstretch:outputs` and otherwise automatically detects and spans all enabled monitors sharing the active window's horizontal row, height, and scale.
 
 ## How to Use
 
 - **Toggle Global Fullscreen (`Super+G`):** Stretches the focused window across your horizontal monitor row. Press `Super+G` again to restore the window to its original single-monitor tiled or floating state.
 - **Pick Specific Monitors (`Super+Shift+G`):** Opens the visual monitor layout with the active window's current monitor pre-selected.
-  - Click additional monitors to span across a custom subset and click **Apply**.
-  - Click **Restore** (or press `Super+G` afterward) to return the window to normal.
+  - Click additional monitors to span across a custom subset (or leave 1 selected for single-monitor fullscreen) and click **Apply**.
+  - Press `Super+G` (or your fullscreen keybind) afterward to return the window to normal.
   - Press `Escape`, `Super+Shift+G`, or `Super+G` while the picker is open to dismiss it without changes.
 
 See [`docs/API.md`](docs/API.md) for direct `hyprctl hyprstretch` CLI commands and native `hl.plugin.hyprstretch.*` Lua functions.
 
 ## Limits
 
-Selected monitors must form one contiguous horizontal row and share a logical height and scale. Include the window's current monitor. Pinned, grouped, and special-workspace windows are unsupported. XWayland requires `xwayland:force_zero_scaling` off. Rebuild after Hyprland updates.
+Selected monitors must form one contiguous horizontal row and share a logical height and scale. Include the window's current monitor. Pinned, grouped, and special-workspace windows are unsupported. XWayland requires `xwayland:force_zero_scaling` off. Rebuild after Hyprland updates (`hyprpm update` or `make reload`).
 
 ## Checks
 
 ```sh
-make
-make test
-make build/window-fixture
-python3 tests/picker_smoke.py
-python3 tests/integration.py
+make check
 ```
 
 The integration checks use a nested compositor and do not control the parent session. MIT license. Developed by Ryan Parker with AI assistance.

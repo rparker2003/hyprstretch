@@ -3,6 +3,17 @@
 Monitor names and window selections are runtime arguments. There are no built-in
 keybindings, user-specific outputs, profiles, or application names in the plugin.
 
+## Configuration
+
+```ini
+plugin:hyprstretch:outputs = DP-2 DP-3 DP-1
+```
+
+`plugin:hyprstretch:outputs` is an optional space-separated list of default monitor
+names used when `toggle` or `stretch` is invoked without explicit `OUTPUT` arguments.
+When left empty (the default), Hyprstretch automatically discovers all enabled
+monitors sharing the target window's horizontal row (`y`), logical height, and scale.
+
 ## Commands
 
 ```sh
@@ -15,7 +26,8 @@ hyprctl hyprstretch restore [window=ADDRESS]
 - `toggle` restores an already stretched target, or starts stretching it.
 - `stretch` starts or updates a target's selection. Repeating the same request
   keeps it stretched; it does not toggle it off. Its original restore state is
-  retained when changing the selection.
+  retained when changing the selection. A single monitor fullscreens the window on
+  that monitor.
 - `restore` restores a target; it is harmless when that target is already restored.
 - `status` reports the plugin version, monitor coordinates, and active sessions.
   This diagnostic text is not a versioned JSON schema.
@@ -25,11 +37,12 @@ Omitting `window=ADDRESS` targets the focused application. Supply an `address` f
 Both `0x1234` and `address:0x1234` forms are accepted. A closed or unknown target
 returns an error; the plugin does not silently choose another application.
 
-Omitting outputs chooses monitors sharing the target monitor's top edge, logical
-height and scale. Explicit names are preferable when extra displays should be
-excluded. `hyprctl -j monitors` is the source of output names. Invalid selections
-are rejected before changing the application's geometry. The command replies
-`ok` on success and `error: ...` on failure.
+Omitting outputs uses `plugin:hyprstretch:outputs` if configured, or chooses enabled
+monitors sharing the target monitor's top edge, logical height, and scale. Explicit
+names are preferable when extra displays should be excluded. `hyprctl -j monitors`
+is the source of output names. Invalid selections are rejected before changing the
+application's geometry. The command replies `ok` on success and `error: ...` on
+failure.
 
 ## Native Lua API
 
@@ -46,7 +59,7 @@ changing the window. Functions exist while the plugin is loaded.
 
 ```lua
 hl.bind("SUPER + G", function()
-    hl.plugin.hyprstretch.toggle({ outputs = { "LEFT", "CENTER", "RIGHT" } })
+    hl.plugin.hyprstretch.toggle()
 end, { description = "Stretch or restore" })
 ```
 
@@ -56,11 +69,14 @@ dispatcher-registration interface.
 
 ## Keybindings and integrations
 
-An executable command is a simple Lua binding that works without any plugin
-functions in the config parser:
+An executable command works in both `hyprland.conf` and Lua configurations:
+
+```ini
+bind = SUPER, G, exec, hyprctl hyprstretch toggle
+```
 
 ```lua
-hl.bind("SUPER + G", hl.dsp.exec_cmd("hyprctl hyprstretch toggle DP-2 DP-3 DP-1"),
+hl.bind("SUPER + G", hl.dsp.exec_cmd("hyprctl hyprstretch toggle"),
         { description = "Toggle stretch" })
 ```
 
@@ -69,8 +85,9 @@ output names, and call `stretch window=ADDRESS OUTPUT ...`. Applications using
 `subprocess` should pass an argument list rather than interpolate untrusted
 values into a shell command.
 
-The optional `tools/picker.py` selector is a separate client of this API. Bind it
-with `SUPER + SHIFT + G`; it captures the active window, draws the physical monitor
-layout with that window's monitor selected, then sends the chosen outputs to
-`hyprstretch stretch`. Reopening the picker closes it. Super+G closes it while open
-and otherwise runs the three-monitor toggle.
+The optional `tools/picker.py` (`hyprstretch-picker`) selector is a separate client
+of this API. Bind it with `SUPER + SHIFT + G`; it captures the active window, draws
+the compatible horizontal monitor layout with that window's monitor selected, then
+sends the chosen outputs to `hyprstretch stretch`. Reopening the
+picker closes it. `tools/toggle.py` (`hyprstretch-toggle`) closes the picker while
+open and otherwise toggles the span.

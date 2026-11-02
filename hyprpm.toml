@@ -1,0 +1,12 @@
+[repository]
+name = "hyprstretch"
+authors = ["Ryan Parker"]
+commit_pins = []
+
+[hyprstretch]
+description = "Global fullscreen and partial multi-monitor fullscreen spanning for Hyprland"
+authors = ["Ryan Parker"]
+output = "build/hyprstretch.so"
+build = [
+    "make build/hyprstretch.so",
+]
