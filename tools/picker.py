@@ -61,7 +61,7 @@ class Picker(Gtk.Application):
             raise ValueError("no compatible monitors found")
         self.monitors.sort(key=lambda monitor: monitor["x"])
         self.selected = {monitor["name"] for monitor in self.monitors if monitor["id"] == self.window_info.get("monitor")}
-        self.adjusted = False
+        self.initial_selected = set(self.selected)
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, self.on_close_or_escape)
 
     def do_activate(self):
@@ -162,7 +162,7 @@ class Picker(Gtk.Application):
         window.present()
 
     def on_close_or_escape(self, *_):
-        if self.adjusted and self.selected:
+        if self.selected != self.initial_selected and self.selected:
             self.apply_selection()
         else:
             self.quit()
@@ -188,14 +188,12 @@ class Picker(Gtk.Application):
                 button.set_active(not button.get_active())
             return True
         if keyval in (Gdk.KEY_a, Gdk.KEY_A):
-            self.adjusted = True
             for button in self.ordered_buttons:
                 button.set_active(True)
             return True
         return False
 
     def on_toggle(self, button, name):
-        self.adjusted = True
         if button.get_active():
             self.selected.add(name)
         else:
