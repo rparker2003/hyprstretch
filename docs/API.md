@@ -12,7 +12,7 @@ plugin:hyprstretch:outputs = DP-2 DP-3 DP-1
 `plugin:hyprstretch:outputs` is an optional space-separated list of default monitor
 names used when `toggle` or `stretch` is invoked without explicit `OUTPUT` arguments.
 When left empty (the default), Hyprstretch automatically discovers all enabled
-monitors sharing the target window's horizontal row (`y`), logical height, and scale.
+monitors sharing the target window's horizontal row (`y`) and logical height.
 
 ## Commands
 
@@ -38,7 +38,7 @@ Both `0x1234` and `address:0x1234` forms are accepted. A closed or unknown targe
 returns an error; the plugin does not silently choose another application.
 
 Omitting outputs uses `plugin:hyprstretch:outputs` if configured, or chooses enabled
-monitors sharing the target monitor's top edge, logical height, and scale. Explicit
+monitors sharing the target monitor's top edge and logical height. Explicit
 names are preferable when extra displays should be excluded. `hyprctl -j monitors`
 is the source of output names. Invalid selections are rejected before changing the
 application's geometry. The command replies `ok` on success and `error: ...` on

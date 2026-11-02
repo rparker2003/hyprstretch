@@ -182,6 +182,20 @@ hl.config({animations={enabled=false}, xwayland={force_zero_scaling=false},
             wait_for(f"{backend} disconnect restores the application", lambda: fixture(title)["fullscreen"] == initial["fullscreen"] and "manual sessions: 0" in ctl("hyprstretch"))
             ctl("output", "create", "headless", "RIGHT")
             wait_for("right monitor reconnects", lambda: len(json.loads(ctl("-j", "monitors"))) == 4)
+            assert ctl("hyprstretch", "stretch", f"window={address}", "LEFT", "CENTER", "RIGHT") == "ok"
+            ctl("output", "remove", "CENTER")
+            wait_for(f"{backend} anchor monitor disconnect evacuates and restores application",
+                     lambda: fixture(title)["fullscreen"] == initial["fullscreen"] and "manual sessions: 0" in ctl("hyprstretch"))
+            ctl("output", "create", "headless", "CENTER")
+            wait_for("center monitor reconnects", lambda: len(json.loads(ctl("-j", "monitors"))) == 4)
+            dispatch("hl.dsp.focus({workspace=1})")
+            assert ctl("eval", 'hl.monitor({output="LEFT", mode="2560x1440@144", position="-1280x0", scale=2})') == "ok"
+            assert ctl("hyprstretch", "stretch", f"window={address}", "LEFT", "CENTER", "RIGHT") == "ok"
+            wait_for(f"{backend} spans across mixed scale (2x HiDPI @ 144Hz + 1x @ 60Hz) with matching logical height",
+                     lambda: fixture(title)["at"] == [-1280, 0] and fixture(title)["size"] == [3840, 720])
+            assert ctl("hyprstretch", "restore", f"window={address}") == "ok"
+            assert ctl("eval", 'hl.monitor({output="LEFT", mode="1280x720@60", position="-1280x0", scale=1})') == "ok"
+            wait_for(f"{backend} restores after mixed-scale span", lambda: fixture(title)["size"] == initial["size"])
             assert ctl("hyprstretch", "toggle", f"window={address}", "LEFT", "CENTER", "RIGHT") == "ok"
             wait_for(f"{backend} toggle starts a new session", lambda: fixture(title)["size"] == [3840, 720])
             assert ctl("hyprstretch", "toggle", f"window={address}", "LEFT", "CENTER", "RIGHT") == "ok"

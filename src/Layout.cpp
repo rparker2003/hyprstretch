@@ -6,6 +6,13 @@
 
 namespace Stretch
 {
+  namespace
+  {
+    // NOTE: Allow up to 2 logical pixels of tolerance so fractional scaling (e.g. 1.25x, 1.33x, 1.5x)
+    // and integer monitor position rounding do not falsely reject contiguous horizontal rows.
+    constexpr double geometryEpsilon = 2.0;
+  }
+
   std::expected<Rectangle, std::string> horizontalRegion(std::span<const Display> displays_, bool sameHeight_)
   {
     if (displays_.empty())
@@ -36,15 +43,15 @@ namespace Stretch
     double height = first.height;
     for (const auto* display : row)
     {
-      if (std::abs(display->x - edge) > 0.01 || std::abs(display->y - first.y) > 0.01)
+      if (std::abs(display->x - edge) > geometryEpsilon || std::abs(display->y - first.y) > geometryEpsilon)
       {
         return std::unexpected("Monitors must form a horizontal row without gaps or overlaps");
       }
-      if (sameHeight_ && (std::abs(display->height - first.height) > 0.01 || std::abs(display->scale - first.scale) > 0.001))
+      if (sameHeight_ && std::abs(display->height - first.height) > geometryEpsilon)
       {
-        return std::unexpected("Selected monitors must have equal logical heights and scales");
+        return std::unexpected("Selected monitors must have equal logical heights");
       }
-      edge += display->width;
+      edge = display->x + display->width;
       height = std::max(height, display->height);
     }
     return Rectangle{first.x, first.y, edge - first.x, height};

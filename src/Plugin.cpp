@@ -23,7 +23,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle_)
   auto candidate = std::make_unique<Stretch::Engine>(handle_);
   candidate->start();
   engine = std::move(candidate);
-  return {"hyprstretch", "Manual stretch and restore across selected monitors", "Ryan Parker (AI-assisted development)", "0.2.0"};
+  return {"hyprstretch", "Manual stretch and restore across selected monitors", "Ryan Parker (AI-assisted development)", "1.0.1"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT()

@@ -123,6 +123,14 @@ namespace Stretch
     {
       rebuildLeases();
     }));
+    _subscriptions.push_back(events.workspace.moveToMonitor.listen([this](PHLWORKSPACE, PHLMONITOR)
+    {
+      scheduleUpdate();
+    }));
+    _subscriptions.push_back(events.monitor.removed.listen([this](PHLMONITOR)
+    {
+      scheduleUpdate();
+    }));
     _subscriptions.push_back(events.monitor.layoutChanged.listen([this]
     {
       scheduleUpdate();
@@ -197,7 +205,7 @@ namespace Stretch
       if (window->backend().isX11())
       {
         const auto difference = monitor->m_position - monitor->m_xwaylandPosition;
-        if (monitor->m_xwaylandScale != 1.F || (translation && (difference - *translation).size() > 0.01))
+        if (monitor->m_xwaylandScale != 1.F || (translation && (difference - *translation).size() > 2.0))
         {
           return "XWayland coordinates do not match the selected desktop row; disable force_zero_scaling";
         }
@@ -312,9 +320,9 @@ namespace Stretch
       }
       for (const auto& monitor : State::monitorState()->monitors())
       {
-        // NOTE: Ignore disabled monitors during automatic horizontal row discovery.
-        if (monitor->m_enabled && std::abs(monitor->m_position.y - anchor->m_position.y) < 0.01 &&
-            std::abs(monitor->m_size.y - anchor->m_size.y) < 0.01 && monitor->m_scale == anchor->m_scale)
+        // NOTE: Ignore disabled monitors and match logical top edge and height within 2px for fractional scaling.
+        if (monitor->m_enabled && std::abs(monitor->m_position.y - anchor->m_position.y) <= 2.0 &&
+            std::abs(monitor->m_size.y - anchor->m_size.y) <= 2.0)
         {
           session._outputs.push_back(monitor->m_name);
         }
@@ -388,7 +396,26 @@ namespace Stretch
     controller()->setFullscreenMode(window, session._savedMode.internal, session._savedMode.client, session._savedLayoutMode, FULLSCREEN_MUTATION_TRANSFER);
     if (session._floating && session._savedMode.internal == FSMODE_NONE && window->layoutTarget())
     {
-      window->layoutTarget()->setPositionGlobal(session._savedFrame);
+      CBox restoredFrame = session._savedFrame;
+      const auto center = restoredFrame.middle();
+      const bool onEnabledMonitor = std::ranges::any_of(State::monitorState()->monitors(), [&](const auto& monitor_)
+      {
+        return monitor_->m_enabled &&
+               center.x >= monitor_->m_position.x && center.x < monitor_->m_position.x + monitor_->m_size.x &&
+               center.y >= monitor_->m_position.y && center.y < monitor_->m_position.y + monitor_->m_size.y;
+      });
+      if (!onEnabledMonitor)
+      {
+        if (const auto currentMonitor = window->m_monitor.lock())
+        {
+          // NOTE: Clamp floating restore geometry onto the surviving monitor when its original monitor was unplugged.
+          restoredFrame.w = std::min(restoredFrame.w, currentMonitor->m_size.x);
+          restoredFrame.h = std::min(restoredFrame.h, currentMonitor->m_size.y);
+          restoredFrame.x = currentMonitor->m_position.x + (currentMonitor->m_size.x - restoredFrame.w) / 2.0;
+          restoredFrame.y = currentMonitor->m_position.y + (currentMonitor->m_size.y - restoredFrame.h) / 2.0;
+        }
+      }
+      window->layoutTarget()->setPositionGlobal(restoredFrame);
     }
     else if (window->m_workspace && window->m_workspace->space())
     {
@@ -610,7 +637,7 @@ namespace Stretch
   std::string Engine::status() const
   {
     std::ostringstream result;
-    result << "Hyprstretch 0.2.0; manual sessions: " << _sessions.size() << '\n';
+    result << "Hyprstretch 1.0.1; manual sessions: " << _sessions.size() << '\n';
     for (const auto& monitor : State::monitorState()->monitors())
     {
       result << std::format("output {} desktop {},{} X11 {},{}\n", monitor->m_name, monitor->m_position.x, monitor->m_position.y,

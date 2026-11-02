@@ -51,9 +51,8 @@ class Picker(Gtk.Application):
             _, anchor_h = logical_size(anchor)
             self.monitors = [
                 m for m in all_monitors
-                if abs(m["y"] - anchor["y"]) < 0.01
-                and abs(logical_size(m)[1] - anchor_h) < 0.01
-                and abs(m["scale"] - anchor["scale"]) < 0.001
+                if abs(m["y"] - anchor["y"]) <= 2.0
+                and abs(logical_size(m)[1] - anchor_h) <= 2.0
             ]
         else:
             self.monitors = all_monitors

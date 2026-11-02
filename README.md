@@ -81,7 +81,7 @@ hl.bind("SUPER + SHIFT + G",
     { description = "Open monitor picker for partial/custom span" })
 ```
 
-> **Note on Defaults:** If you do not pass monitor names to `hyprstretch-toggle` (`tools/toggle.py`) or `hyprctl hyprstretch toggle`, Hyprstretch checks `plugin:hyprstretch:outputs` and otherwise automatically detects and spans all enabled monitors sharing the active window's horizontal row, height, and scale.
+> **Note on Defaults:** If you do not pass monitor names to `hyprstretch-toggle` (`tools/toggle.py`) or `hyprctl hyprstretch toggle`, Hyprstretch checks `plugin:hyprstretch:outputs` and otherwise automatically detects and spans all enabled monitors sharing the active window's horizontal row and logical height (including mixed resolutions/scales such as 4K at `1.5x` alongside 1440p at `1.0x`).
 
 ## How to Use
 
@@ -95,7 +95,7 @@ See [`docs/API.md`](docs/API.md) for direct `hyprctl hyprstretch` CLI commands a
 
 ## Limits
 
-Selected monitors must form one contiguous horizontal row and share a logical height and scale. Include the window's current monitor. Pinned, grouped, and special-workspace windows are unsupported. XWayland requires `xwayland:force_zero_scaling` off. Rebuild after Hyprland updates (`hyprpm update` or `make reload`).
+Selected monitors must form one contiguous horizontal row and share a logical height (mixed physical resolutions, aspect ratios, refresh rates, and HiDPI scales are supported as long as their scaled logical heights match). Include the window's current monitor. Pinned, grouped, and special-workspace windows are unsupported. XWayland requires `xwayland:force_zero_scaling` off. Rebuild after Hyprland updates (`hyprpm update` or `make reload`).
 
 ## Checks
 
