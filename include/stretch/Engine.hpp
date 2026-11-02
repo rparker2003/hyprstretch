@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hyprland/src/config/values/ConfigValues.hpp>
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/SharedDefs.hpp>
 #include <hyprland/src/helpers/signal/Signal.hpp>
@@ -56,6 +57,7 @@ namespace Stretch
     std::set<uint64_t> _transitions;
     std::vector<CHyprSignalListener> _subscriptions;
     SP<IPC::Socket1::SCommand> _command;
+    SP<Config::Values::CStringValue> _defaultOutputs;
     std::vector<std::string> _luaFunctions;
     inline static Engine* _luaOwner = nullptr;
     wl_event_source* _timer = nullptr;

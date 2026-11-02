@@ -2,6 +2,8 @@
 """Show a clickable physical monitor layout for the active window."""
 
 import json
+import os
+import signal
 import subprocess
 import sys
 
@@ -11,6 +13,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, Gtk
 
+PICKER_CLASS = "com.rparker.hyprstretch-picker"
+
 
 def query(*arguments):
     result = subprocess.run(["hyprctl", "-j", *arguments], check=True, text=True, capture_output=True)
@@ -19,9 +23,9 @@ def query(*arguments):
 
 def close_existing_picker():
     windows = query("clients")
-    existing = next((window for window in windows if window.get("class") == "com.rparker.hyprstretch-picker"), None)
-    if existing:
-        subprocess.run(["hyprctl", "eval", "hl.dispatch(hl.dsp.window.close())"], check=True)
+    existing = next((window for window in windows if window.get("class") == PICKER_CLASS), None)
+    if existing and existing.get("pid", -1) > 0:
+        os.kill(existing["pid"], signal.SIGTERM)
         return True
     return False
 
@@ -30,7 +34,17 @@ class Picker(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.rparker.hyprstretch-picker")
         self.window_info = query("activewindow")
-        self.monitors = query("monitors")
+        all_monitors = [m for m in query("monitors") if not m.get("disabled", False) and m.get("dpmsStatus", True)]
+        anchor = next((m for m in all_monitors if m["id"] == self.window_info.get("monitor")), None)
+        if anchor:
+            self.monitors = [
+                m for m in all_monitors
+                if abs(m["y"] - anchor["y"]) < 0.01
+                and abs(m["height"] - anchor["height"]) < 0.01
+                and abs(m["scale"] - anchor["scale"]) < 0.001
+            ]
+        else:
+            self.monitors = all_monitors
         self.selected = {monitor["name"] for monitor in self.monitors if monitor["id"] == self.window_info.get("monitor")}
 
     def do_activate(self):
@@ -116,7 +130,7 @@ class Picker(Gtk.Application):
             self.selected.discard(name)
 
     def apply_selection(self, *_):
-        if len(self.selected) < 2:
+        if len(self.selected) < 1:
             return
         result = subprocess.run(["hyprctl", "hyprstretch", "stretch", f'window={self.window_info["address"]}', *sorted(self.selected)],
                                 check=False, text=True, capture_output=True)

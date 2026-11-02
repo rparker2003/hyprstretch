@@ -140,6 +140,15 @@ namespace Stretch
     {
       throw std::runtime_error("Could not register the hyprstretch command");
     }
+    // NOTE: Register plugin:hyprstretch:outputs so users can optionally configure default monitor names in hyprland.conf or Lua.
+    _defaultOutputs = Config::Values::makeConfigValue<Config::Values::String>(
+      "plugin:hyprstretch:outputs",
+      "Optional space-separated default monitor names for hyprstretch",
+      "");
+    if (!HyprlandAPI::addConfigValueV2(_handle, _defaultOutputs))
+    {
+      throw std::runtime_error("Could not register config value plugin:hyprstretch:outputs");
+    }
     _luaOwner = this;
     const std::pair<const char*, PLUGIN_LUA_FN> functions[]{{"toggle", luaToggle}, {"stretch", luaStretch}, {"restore", luaRestore}};
     for (const auto& [name, function] : functions)
@@ -161,9 +170,9 @@ namespace Stretch
     {
       return "Use an unpinned, ungrouped window on a regular workspace";
     }
-    if (session_._outputs.size() < 2)
+    if (session_._outputs.empty())
     {
-      return "Select at least two monitors";
+      return "Select at least one monitor";
     }
     std::vector<Display> displays;
     std::vector<PHLMONITORREF> selected;
@@ -284,6 +293,16 @@ namespace Stretch
     }
     session._window = window;
     session._outputs = outputs_;
+    if (session._outputs.empty() && _defaultOutputs)
+    {
+      // NOTE: Fall back to plugin:hyprstretch:outputs when configured before auto-discovering the horizontal row.
+      std::istringstream configured(_defaultOutputs->value());
+      std::string name;
+      while (configured >> name)
+      {
+        session._outputs.push_back(name);
+      }
+    }
     if (session._outputs.empty())
     {
       const auto anchor = window->m_monitor.lock();
