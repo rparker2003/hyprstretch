@@ -52,6 +52,7 @@ namespace Stretch
     std::map<uint64_t, Session> _sessions;
     std::map<MONITORID, uint64_t> _leases;
     std::map<MONITORID, PHLWORKSPACEREF> _masked;
+    std::vector<PHLLSREF> _demotedLayers;
     std::set<uint64_t> _transitions;
     std::vector<CHyprSignalListener> _subscriptions;
     SP<IPC::Socket1::SCommand> _command;

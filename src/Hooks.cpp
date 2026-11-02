@@ -1,5 +1,4 @@
 #include "stretch/Engine.hpp"
-#include "stretch/Layout.hpp"
 
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/desktop/view/window/Window.hpp>
@@ -15,6 +14,7 @@
 #include <hyprland/src/state/MonitorPositionController.hpp>
 #include <hyprland/src/workspace/HLWorkspace.hpp>
 
+#include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <string_view>
@@ -159,22 +159,23 @@ namespace Stretch::Hooks
     void arrangement(const State::CMonitorPositionController* controller_, std::span<const SP<Monitor::IMonitorArrangeable>> monitors_, bool zeroScaling_)
     {
       previous<decltype(&arrangement)>(Site::Arrangement)(controller_, monitors_, zeroScaling_);
-      if (zeroScaling_)
+      if (zeroScaling_ || monitors_.empty())
       {
         return;
       }
-      std::vector<Display> layout;
+      // NOTE: Translate XWayland monitor positions by the bounding-box minimum so any desktop layout
+      // (including negative coordinates or vertically stacked auxiliary monitors) preserves its exact
+      // relative arrangement in non-negative X11 space.
+      double minX = monitors_.front()->position().x;
+      double minY = monitors_.front()->position().y;
       for (const auto& monitor : monitors_)
       {
-        layout.push_back({std::string{monitor->name()}, monitor->position().x, monitor->position().y, monitor->size().x, monitor->size().y, monitor->scale()});
+        minX = std::min(minX, monitor->position().x);
+        minY = std::min(minY, monitor->position().y);
       }
-      const auto extent = horizontalRegion(layout, false);
-      if (extent)
+      for (const auto& monitor : monitors_)
       {
-        for (const auto& monitor : monitors_)
-        {
-          monitor->setXWaylandPosition(Vector2D{monitor->position().x - extent->x, 0.0});
-        }
+        monitor->setXWaylandPosition(Vector2D{monitor->position().x - minX, monitor->position().y - minY});
       }
     }
 

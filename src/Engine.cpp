@@ -169,9 +169,10 @@ namespace Stretch
     std::vector<PHLMONITORREF> selected;
     bool containsWindow = false;
     std::optional<Vector2D> translation;
+    // NOTE: Hoisted outside the loop so we only query monitorState() once per resolution.
+    const auto& monitors = State::monitorState()->monitors();
     for (const auto& name : session_._outputs)
     {
-      const auto& monitors = State::monitorState()->monitors();
       const auto found = std::ranges::find_if(monitors, [&](const auto& monitor_)
       {
         return monitor_->m_name == name && monitor_->m_enabled;
@@ -272,10 +273,13 @@ namespace Stretch
       return "Focus an application first";
     }
     const auto id = window->metadata().stableID();
+    const bool existingSession = _sessions.contains(id);
+    std::optional<Session> previousSession;
     Session session;
-    if (_sessions.contains(id))
+    if (existingSession)
     {
-      session = _sessions.at(id);
+      previousSession = _sessions.at(id);
+      session = *previousSession;
       session._released.clear();
     }
     session._window = window;
@@ -289,7 +293,9 @@ namespace Stretch
       }
       for (const auto& monitor : State::monitorState()->monitors())
       {
-        if (std::abs(monitor->m_position.y - anchor->m_position.y) < 0.01 && std::abs(monitor->m_size.y - anchor->m_size.y) < 0.01 && monitor->m_scale == anchor->m_scale)
+        // NOTE: Ignore disabled monitors during automatic horizontal row discovery.
+        if (monitor->m_enabled && std::abs(monitor->m_position.y - anchor->m_position.y) < 0.01 &&
+            std::abs(monitor->m_size.y - anchor->m_size.y) < 0.01 && monitor->m_scale == anchor->m_scale)
         {
           session._outputs.push_back(monitor->m_name);
         }
@@ -313,7 +319,7 @@ namespace Stretch
         }
       }
     }
-    if (!_sessions.contains(id))
+    if (!existingSession)
     {
       session._savedFrame = window->geometricBox(Desktop::View::IGeometric::GEOMETRIC_GOAL);
       session._savedMode = controller()->getFullscreenModes(window);
@@ -327,7 +333,16 @@ namespace Stretch
     controller()->setFullscreenMode(window, FSMODE_FULLSCREEN, _sessions.at(id)._savedMode.client, false, FULLSCREEN_MUTATION_TRANSFER);
     if (controller()->getFullscreenModes(window).internal != FSMODE_FULLSCREEN)
     {
-      restore(id);
+      // NOTE: Roll back to the prior active session if updating an existing stretch failed, otherwise restore.
+      if (previousSession)
+      {
+        _sessions.insert_or_assign(id, std::move(*previousSession));
+        rebuildLeases();
+      }
+      else
+      {
+        restore(id);
+      }
       return "Hyprland declined the fullscreen transition";
     }
     updateGeometry(window);
@@ -364,7 +379,8 @@ namespace Stretch
 
   std::optional<CBox> Engine::frame(PHLWINDOW window_) const
   {
-    if (!window_ || !window_->mapped())
+    // NOTE: Fast-path exit when no sessions are active to keep hot layout/fullscreen hooks zero-overhead.
+    if (_sessions.empty() || !window_ || !window_->mapped())
     {
       return std::nullopt;
     }
@@ -378,7 +394,8 @@ namespace Stretch
 
   PHLWINDOW Engine::occupant(PHLWORKSPACE workspace_) const
   {
-    if (!workspace_ || workspace_->type() != Workspace::eWorkspaceType::NORMAL)
+    // NOTE: Fast-path exit when no secondary monitors are leased to keep hot render/query hooks zero-overhead.
+    if (_leases.empty() || !workspace_ || workspace_->type() != Workspace::eWorkspaceType::NORMAL)
     {
       return nullptr;
     }
@@ -411,19 +428,38 @@ namespace Stretch
         window->updateFullscreenInputState();
       }
     }
-    for (const auto& layer : Desktop::layerState()->layers())
+    const auto targetMonitor = workspace_->m_monitor.lock();
+    if (hide)
     {
-      if (layer->m_monitor.lock() == workspace_->m_monitor.lock())
+      for (const auto& layer : Desktop::layerState()->layers())
       {
-        if (hide)
+        if (layer->m_monitor.lock() == targetMonitor && (layer->m_flags & Desktop::View::LAYER_FLAG_ABOVE_FULLSCREEN))
         {
+          // NOTE: Track only layers that originally had LAYER_FLAG_ABOVE_FULLSCREEN so unmasking does not promote background/bottom layers.
           layer->m_flags &= ~Desktop::View::LAYER_FLAG_ABOVE_FULLSCREEN;
-        }
-        else
-        {
-          layer->m_flags |= Desktop::View::LAYER_FLAG_ABOVE_FULLSCREEN;
+          if (std::ranges::find_if(_demotedLayers, [&](const auto& ref_) { return ref_.lock() == layer; }) == _demotedLayers.end())
+          {
+            _demotedLayers.emplace_back(layer);
+          }
         }
       }
+    }
+    else
+    {
+      std::erase_if(_demotedLayers, [&](const auto& ref_)
+      {
+        const auto layer = ref_.lock();
+        if (!layer)
+        {
+          return true;
+        }
+        if (layer->m_monitor.lock() == targetMonitor)
+        {
+          layer->m_flags |= Desktop::View::LAYER_FLAG_ABOVE_FULLSCREEN;
+          return true;
+        }
+        return false;
+      });
     }
     Animation::Workspace::setFullscreenFadeAnimation(workspace_, hide ? Animation::Workspace::ANIMATION_TYPE_IN : Animation::Workspace::ANIMATION_TYPE_OUT);
     if (!hide && workspace_->space())
