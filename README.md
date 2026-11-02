@@ -2,7 +2,7 @@
 
 **Global fullscreen** and **partial multi-monitor fullscreen** for Hyprland—stretch any window across all (or a chosen subset) of your monitors without floating it. Super easy!
 
-Upstream Hyprland declined built-in global fullscreen across multiple monitors in [hyprwm/Hyprland#1660](https://github.com/hyprwm/Hyprland/issues/1660), and while I looked into [Hyprspan](https://github.com/gondhijagapathi/hyprspan), it didn't do everything I wanted, so I built **Hyprstretch**! This works for every Wayland and XWayland application I've tested so far—including sim-racing games like *Assetto Corsa* across triple monitors, ultrawide workflows, and terminals or apps that don't request multi-monitor spanning themselves.
+Hyprland doesn't include built-in global fullscreen across multiple monitors yet, and while I looked into [Hyprspan](https://github.com/gondhijagapathi/hyprspan), it didn't do everything I wanted—so I built **Hyprstretch**! It works with every Wayland and XWayland application I've tested so far, including sim-racing games like *Assetto Corsa* across triple monitors, ultrawide workflows, and terminals or apps that don't support multi-monitor spanning on their own.
 
 ### Modes: Global Fullscreen vs. Partial Fullscreen
 
@@ -93,3 +93,8 @@ python3 tests/integration.py
 ```
 
 The integration checks use a nested compositor and do not control the parent session. MIT license. Developed by Ryan Parker with AI assistance.
+
+## References
+
+- [hyprwm/Hyprland#1660](https://github.com/hyprwm/Hyprland/issues/1660) — Upstream global fullscreen feature request
+- [Hyprspan](https://github.com/gondhijagapathi/hyprspan) — Multi-monitor fullscreen plugin reference
