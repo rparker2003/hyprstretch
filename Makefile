@@ -9,7 +9,7 @@ PREFIX ?= $(HOME)/.local
 BINDIR ?= $(PREFIX)/bin
 PLUGINDIR ?= $(PREFIX)/lib/hyprstretch
 
-.PHONY: all test check install uninstall reload clean
+.PHONY: all test check install install-tools uninstall reload clean
 all: build/hyprstretch.so
 
 build:
@@ -31,10 +31,13 @@ check: test build/hyprstretch.so build/window-fixture
 	python3 tests/picker_smoke.py
 	python3 tests/integration.py
 
-install: build/hyprstretch.so
-	install -d "$(BINDIR)" "$(PLUGINDIR)"
+install-tools:
+	install -d "$(BINDIR)"
 	install -m 755 tools/toggle.py "$(BINDIR)/hyprstretch-toggle"
 	install -m 755 tools/picker.py "$(BINDIR)/hyprstretch-picker"
+
+install: build/hyprstretch.so install-tools
+	install -d "$(PLUGINDIR)"
 	@versioned="hyprstretch-$$(date +%s).so"; \
 	install -m 755 build/hyprstretch.so "$(PLUGINDIR)/$$versioned"; \
 	ln -sfn "$$versioned" "$(PLUGINDIR)/current.so"
